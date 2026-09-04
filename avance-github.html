@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Avance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0e17;
+    --bg-panel: #10141f;
+    --track: #1b2134;
+    --border: #232a3d;
+    --text: #e9edf5;
+    --muted: #7c8598;
+    --a: #ffb454;
+    --a-glow: rgba(255,180,84,.5);
+    --b: #4fd1ff;
+    --b-glow: rgba(79,209,255,.5);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1100px 500px at 15% -10%, rgba(255,180,84,.08), transparent 60%),
+      radial-gradient(1100px 500px at 85% 0%, rgba(79,209,255,.08), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Manrope', system-ui, sans-serif;
+    padding:1.5rem clamp(1rem, 4vw, 3rem) 3rem;
+  }
+  h1,h2{ font-family:'Space Grotesk', system-ui, sans-serif; margin:0; }
+  button, input{ font-family:inherit; color:inherit; }
+  .hidden{ display:none !important; }
+
+  /* Topbar */
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:1rem;
+    padding-bottom:1.5rem; margin-bottom:1.75rem;
+    border-bottom:1px solid var(--border);
+  }
+  .brand{ display:flex; align-items:center; gap:.6rem; }
+  .brand svg{ width:26px; height:26px; }
+  .brand h1{ font-size:1.5rem; font-weight:700; letter-spacing:.01em; }
+  .brand p{ margin:.15rem 0 0; color:var(--muted); font-size:.85rem; }
+  .week-controls{ display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  .week-label{ color:var(--muted); font-size:.9rem; }
+  .whoami-line{ font-size:.85rem; color:var(--muted); display:flex; align-items:center; gap:.5rem; }
+  .link-btn{
+    background:none; border:none; color:var(--text); text-decoration:underline;
+    text-underline-offset:2px; cursor:pointer; font-size:.85rem; padding:0;
+  }
+  .link-btn:hover{ color:var(--a); }
+
+  .ghost-btn{
+    background:transparent; border:1px solid var(--border); color:var(--muted);
+    border-radius:9px; padding:.55rem .9rem; font-weight:600; font-size:.85rem;
+    cursor:pointer; transition:border-color .15s ease, color .15s ease;
+  }
+  .ghost-btn:hover{ border-color:var(--text); color:var(--text); }
+
+  /* Screens: setup + whoami */
+  .screen{
+    max-width:480px; margin:3rem auto; background:var(--bg-panel);
+    border:1px solid var(--border); border-radius:16px; padding:2rem;
+  }
+  .screen h2{ font-size:1.3rem; margin-bottom:.4rem; }
+  .screen p{ color:var(--muted); font-size:.92rem; line-height:1.5; margin-top:0; }
+  .field{ margin-top:1.2rem; }
+  .field label{ display:block; font-size:.85rem; color:var(--muted); margin-bottom:.4rem; }
+  .field input{
+    width:100%; background:var(--track); border:1px solid var(--border);
+    border-radius:10px; padding:.7rem .8rem; font-size:.95rem; color:var(--text);
+  }
+  .field input:focus-visible{ outline:2px solid var(--a); outline-offset:1px; }
+  .who-choices{ display:flex; gap:.75rem; margin-top:1.4rem; flex-wrap:wrap; }
+  .who-choices button{ flex:1; min-width:140px; }
+
+  .glow-btn{
+    --accent: var(--a); --accent-glow: var(--a-glow);
+    background:var(--accent); color:#0a0e17; border:none; border-radius:10px;
+    padding:.75rem 1.15rem; font-weight:700; font-size:.9rem; cursor:pointer;
+    box-shadow:0 0 14px 1px var(--accent-glow);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .glow-btn:hover{ transform:translateY(-1px); box-shadow:0 0 22px 4px var(--accent-glow); }
+  .glow-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .glow-btn.b{ --accent: var(--b); --accent-glow: var(--b-glow); }
+  .screen .glow-btn{ margin-top:1.5rem; width:100%; }
+
+  /* Board */
+  .board{ display:grid; grid-template-columns:1fr 1fr; gap:1.75rem; }
+  .lane{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:16px;
+    padding:1.5rem; display:flex; flex-direction:column;
+  }
+  .lane[data-person="a"]{ --accent:var(--a); --accent-glow:var(--a-glow); }
+  .lane[data-person="b"]{ --accent:var(--b); --accent-glow:var(--b-glow); }
+
+  .lane-head{ display:flex; align-items:baseline; gap:.6rem; margin-bottom:1.1rem; }
+  .lane-head h2{ font-size:1.15rem; }
+  .lane-head .tag{
+    font-size:.72rem; color:var(--accent); border:1px solid var(--accent);
+    border-radius:999px; padding:.15rem .55rem;
+  }
+
+  /* Runway */
+  .runway{ position:relative; height:34px; margin-bottom:.6rem; }
+  .runway-track{
+    position:absolute; top:50%; left:0; right:0; height:2px;
+    background:repeating-linear-gradient(to right, var(--border) 0 10px, transparent 10px 20px);
+    transform:translateY(-50%);
+  }
+  .runway-lights{ position:absolute; inset:0; display:flex; justify-content:space-between; align-items:center; }
+  .runway-lights i{
+    width:6px; height:6px; border-radius:50%; background:var(--track);
+    box-shadow:none; transition:background .3s ease, box-shadow .3s ease;
+  }
+  .runway-lights i.lit{ background:var(--accent); box-shadow:0 0 8px 2px var(--accent-glow); }
+  .plane{
+    position:absolute; top:50%; transform:translate(-50%,-50%) rotate(90deg);
+    transition:left .4s ease; color:var(--accent); filter:drop-shadow(0 0 6px var(--accent-glow));
+  }
+  .plane svg{ width:18px; height:18px; display:block; }
+
+  .progress-label{ margin:0 0 1rem; font-size:.85rem; color:var(--muted); }
+  .progress-label strong{ color:var(--text); }
+
+  .tasks{ list-style:none; margin:0 0 1rem; padding:0; display:flex; flex-direction:column; gap:.5rem; flex:1; }
+  .task{
+    display:flex; align-items:center; gap:.65rem; background:var(--track);
+    border:1px solid var(--border); border-radius:10px; padding:.6rem .7rem;
+  }
+  .task input[type="checkbox"]{
+    appearance:none; width:19px; height:19px; min-width:19px; border-radius:6px;
+    border:1.5px solid var(--muted); background:transparent; cursor:pointer; position:relative;
+  }
+  .task input[type="checkbox"]:disabled{ cursor:default; opacity:.7; }
+  .task input[type="checkbox"]:checked{ background:var(--accent); border-color:var(--accent); box-shadow:0 0 8px 1px var(--accent-glow); }
+  .task input[type="checkbox"]:checked::after{
+    content:''; position:absolute; left:5px; top:1px; width:5px; height:10px;
+    border:solid #0a0e17; border-width:0 2px 2px 0; transform:rotate(40deg);
+  }
+  .task input[type="checkbox"]:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .task span{ flex:1; font-size:.92rem; line-height:1.35; }
+  .task.done span{ color:var(--muted); text-decoration:line-through; }
+  .task button.del{
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem;
+    line-height:1; padding:.2rem .3rem; border-radius:6px;
+  }
+  .task button.del:hover{ color:#ff8080; }
+  .empty-note{ color:var(--muted); font-size:.85rem; padding:.4rem 0 .8rem; }
+
+  .add-form{ display:flex; gap:.6rem; }
+  .add-form input{
+    flex:1; background:var(--track); border:1px solid var(--border); border-radius:10px;
+    padding:.65rem .8rem; font-size:.9rem; color:var(--text);
+  }
+  .add-form input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+
+  .celebrate{
+    grid-column:1 / -1; margin-top:.5rem; text-align:center; padding:1.1rem 1rem;
+    border:1px solid #ffe9b0; border-radius:14px; color:#ffe9b0;
+    background:rgba(255,233,176,.06);
+    box-shadow:0 0 24px 2px rgba(255,233,176,.25);
+    font-family:'Space Grotesk', sans-serif; font-size:1.02rem;
+  }
+  .celebrate.flash{ animation:pulse 1.1s ease-out 1; }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0px 0px rgba(255,233,176,0); }
+    35%{ box-shadow:0 0 40px 10px rgba(255,233,176,.45); }
+    100%{ box-shadow:0 0 24px 2px rgba(255,233,176,.25); }
+  }
+
+  .conn-note{
+    grid-column:1 / -1; text-align:center; font-size:.8rem; color:var(--muted);
+    padding-top:.25rem;
+  }
+  .conn-note.error{ color:#ff8080; }
+
+  @media (max-width:760px){
+    .board{ grid-template-columns:1fr; }
+    .topbar{ flex-direction:column; align-items:flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001s !important; transition-duration:.001s !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 12L21 4L15 21L11 13L2 12Z" stroke="#e9edf5" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h1>Avance</h1>
+      <p>Finissez vos tâches, débloquez le temps libre ensemble.</p>
+    </div>
+  </div>
+  <div class="week-controls">
+    <span class="week-label" id="weekLabel"></span>
+    <div class="whoami-line hidden" id="whoamiLine"></div>
+    <button class="ghost-btn hidden" id="resetWeekBtn">Nouvelle semaine</button>
+  </div>
+</div>
+
+<!-- Setup screen: first time, create the pair -->
+<div class="screen hidden" id="setupScreen">
+  <h2>Configurez votre binôme</h2>
+  <p>Entrez vos deux prénoms. Vous pourrez ensuite chacun ajouter vos tâches et comparer votre avance.</p>
+  <form id="setupForm">
+    <div class="field">
+      <label for="nameInputA">Premier prénom</label>
+      <input type="text" id="nameInputA" required maxlength="24" placeholder="ex. Léa" />
+    </div>
+    <div class="field">
+      <label for="nameInputB">Deuxième prénom</label>
+      <input type="text" id="nameInputB" required maxlength="24" placeholder="ex. Sam" />
+    </div>
+    <button type="submit" class="glow-btn">Créer le tableau</button>
+  </form>
+</div>
+
+<!-- Who am I screen -->
+<div class="screen hidden" id="whoScreen">
+  <h2>Qui es-tu ?</h2>
+  <p>Ce choix reste enregistré sur cet appareil.</p>
+  <div class="who-choices" id="whoChoices"></div>
+</div>
+
+<!-- Main board -->
+<main class="board hidden" id="board">
+  <section class="lane" data-person="a">
+    <div class="lane-head">
+      <h2 id="nameA"></h2>
+      <span class="tag hidden" id="youTagA">c'est toi</span>
+    </div>
+    <div class="runway">
+      <div class="runway-track"></div>
+      <div class="runway-lights" id="lightsA"></div>
+      <div class="plane" id="planeA">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 12L21 4L15 21L11 13L2 12Z"/></svg>
+      </div>
+    </div>
+    <p class="progress-label" id="progressA"></p>
+    <ul class="tasks" id="tasksA"></ul>
+    <p class="empty-note hidden" id="emptyA"></p>
+    <form class="add-form hidden" id="addFormA">
+      <input type="text" id="inputA" maxlength="80" placeholder="Ajouter une tâche" />
+      <button type="submit" class="glow-btn">Ajouter</button>
+    </form>
+  </section>
+
+  <section class="lane" data-person="b">
+    <div class="lane-head">
+      <h2 id="nameB"></h2>
+      <span class="tag hidden" id="youTagB">c'est toi</span>
+    </div>
+    <div class="runway">
+      <div class="runway-track"></div>
+      <div class="runway-lights" id="lightsB"></div>
+      <div class="plane" id="planeB">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 12L21 4L15 21L11 13L2 12Z"/></svg>
+      </div>
+    </div>
+    <p class="progress-label" id="progressB"></p>
+    <ul class="tasks" id="tasksB"></ul>
+    <p class="empty-note hidden" id="emptyB"></p>
+    <form class="add-form hidden" id="addFormB">
+      <input type="text" id="inputB" maxlength="80" placeholder="Ajouter une tâche" />
+      <button type="submit" class="glow-btn b">Ajouter</button>
+    </form>
+  </section>
+
+  <div class="celebrate hidden" id="celebrate">
+    Piste dégagée pour vous deux. Le temps libre commence maintenant.
+  </div>
+  <p class="conn-note hidden" id="connNote"></p>
+</main>
+
+<!-- ==========================================================
+     Firebase (base de données partagée en temps réel)
+     ========================================================== -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+  // 1. Remplace CES valeurs par celles de TON projet Firebase :
+  //    Console Firebase > icône d'engrenage > Paramètres du projet
+  //    > section "Vos applications" > config de l'app Web.
+  const firebaseConfig = {
+    apiKey: "REMPLACE_MOI",
+    authDomain: "REMPLACE_MOI.firebaseapp.com",
+    databaseURL: "https://REMPLACE_MOI-default-rtdb.firebaseio.com",
+    projectId: "REMPLACE_MOI",
+    storageBucket: "REMPLACE_MOI.appspot.com",
+    messagingSenderId: "REMPLACE_MOI",
+    appId: "REMPLACE_MOI"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
+
+<script>
+  let board = null;      // { config:{nameA,nameB,weekLabel}, tasks:{ [name]: [{id,text,done}] } }
+  let whoami = null;
+  let boardRef = null;
+  let celebrated = false;
+
+  const $ = (id) => document.getElementById(id);
+
+  function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  function mondayLabel(){
+    const d = new Date();
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diff);
+    return 'Semaine du ' + monday.toLocaleDateString('fr-FR', { day:'numeric', month:'long' });
+  }
+
+  // ---- Persistence layer (Firebase Realtime Database) ----
+  async function loadBoard(){
+    try{
+      const snap = await db.ref('board').once('value');
+      return snap.exists() ? snap.val() : null;
+    }catch(e){
+      console.error('Erreur de lecture Firebase', e);
+      showConnError();
+      return null;
+    }
+  }
+  async function saveBoard(){
+    try{
+      await db.ref('board').set(board);
+    }catch(e){
+      console.error('Erreur de sauvegarde Firebase', e);
+      showConnError();
+    }
+  }
+  function showConnError(){
+    const el = $('connNote');
+    el.textContent = "Impossible de contacter la base de données. Vérifie ta config Firebase et les règles de sécurité.";
+    el.classList.remove('hidden');
+    el.classList.add('error');
+  }
+
+  // "Qui es-tu" reste sur CET appareil/navigateur (localStorage, pas Firebase)
+  function loadWhoami(){
+    try{ return localStorage.getItem('avance_whoami'); }
+    catch(e){ return null; }
+  }
+  function saveWhoami(name){
+    try{ localStorage.setItem('avance_whoami', name); }
+    catch(e){ /* stockage indisponible, on continue quand même */ }
+  }
+
+  function showScreen(id){
+    ['setupScreen','whoScreen','board'].forEach(s => $(s).classList.toggle('hidden', s !== id));
+    $('resetWeekBtn').classList.toggle('hidden', id !== 'board');
+    $('whoamiLine').classList.toggle('hidden', id !== 'board');
+  }
+
+  async function init(){
+    board = await loadBoard();
+    if(!board || !board.config){
+      showScreen('setupScreen');
+      return;
+    }
+    $('weekLabel').textContent = board.config.weekLabel || mondayLabel();
+
+    whoami = loadWhoami();
+    const validWho = whoami === board.config.nameA || whoami === board.config.nameB;
+    if(!validWho){
+      renderWhoChoices();
+      showScreen('whoScreen');
+      return;
+    }
+    enterBoard();
+  }
+
+  function renderWhoChoices(){
+    const wrap = $('whoChoices');
+    wrap.innerHTML = '';
+    [board.config.nameA, board.config.nameB].forEach((name, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'glow-btn' + (i === 1 ? ' b' : '');
+      btn.textContent = name;
+      btn.onclick = () => {
+        whoami = name;
+        saveWhoami(name);
+        enterBoard();
+      };
+      wrap.appendChild(btn);
+    });
+  }
+
+  function enterBoard(){
+    showScreen('board');
+    $('whoamiLine').innerHTML = 'Tu es ' + escapeHtml(whoami) + ' <button class="link-btn" id="changeWho">Changer</button>';
+    $('changeWho').onclick = () => {
+      whoami = null;
+      renderWhoChoices();
+      showScreen('whoScreen');
+    };
+    renderAll();
+    startLiveSync();
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function renderAll(){
+    const { nameA, nameB } = board.config;
+    $('nameA').textContent = nameA;
+    $('nameB').textContent = nameB;
+    $('youTagA').classList.toggle('hidden', whoami !== nameA);
+    $('youTagB').classList.toggle('hidden', whoami !== nameB);
+    $('addFormA').classList.toggle('hidden', whoami !== nameA);
+    $('addFormB').classList.toggle('hidden', whoami !== nameB);
+
+    renderLane(nameA, 'A', whoami === nameA);
+    renderLane(nameB, 'B', whoami === nameB);
+    updateCelebration();
+  }
+
+  function renderLane(name, suffix, isOwner){
+    const tasks = (board.tasks[name] || []);
+    const total = tasks.length;
+    const done = tasks.filter(t => t.done).length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+
+    $('progress' + suffix).innerHTML = total
+      ? `<strong>${pct}%</strong> — ${done}/${total} tâches terminées`
+      : `Aucune tâche pour l'instant`;
+
+    const lightsEl = $('lights' + suffix);
+    lightsEl.innerHTML = '';
+    const N = 12;
+    for(let i=0;i<N;i++){
+      const lit = (i / (N-1)) * 100 <= pct;
+      const dot = document.createElement('i');
+      if(lit) dot.classList.add('lit');
+      lightsEl.appendChild(dot);
+    }
+    $('plane' + suffix).style.left = pct + '%';
+
+    const ul = $('tasks' + suffix);
+    ul.innerHTML = '';
+    tasks.forEach(t => {
+      const li = document.createElement('li');
+      li.className = 'task' + (t.done ? ' done' : '');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = t.done;
+      cb.disabled = !isOwner;
+      cb.setAttribute('aria-label', 'Marquer "' + t.text + '" comme terminée');
+      cb.onchange = () => toggleTask(name, t.id);
+      const span = document.createElement('span');
+      span.textContent = t.text;
+      li.appendChild(cb);
+      li.appendChild(span);
+      if(isOwner){
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.type = 'button';
+        del.textContent = '×';
+        del.setAttribute('aria-label', 'Supprimer "' + t.text + '"');
+        del.onclick = () => deleteTask(name, t.id);
+        li.appendChild(del);
+      }
+      ul.appendChild(li);
+    });
+
+    const emptyEl = $('empty' + suffix);
+    if(total === 0){
+      emptyEl.textContent = isOwner
+        ? 'Ajoute ta première tâche pour cette semaine.'
+        : name + " n'a encore rien ajouté.";
+      emptyEl.classList.remove('hidden');
+    } else {
+      emptyEl.classList.add('hidden');
+    }
+  }
+
+  function updateCelebration(){
+    const { nameA, nameB } = board.config;
+    const isFull = (name) => {
+      const tasks = board.tasks[name] || [];
+      return tasks.length > 0 && tasks.every(t => t.done);
+    };
+    const bothDone = isFull(nameA) && isFull(nameB);
+    const el = $('celebrate');
+    if(bothDone){
+      el.classList.remove('hidden');
+      if(!celebrated){
+        el.classList.add('flash');
+        celebrated = true;
+        setTimeout(() => el.classList.remove('flash'), 1200);
+      }
+    } else {
+      el.classList.add('hidden');
+      celebrated = false;
+    }
+  }
+
+  async function toggleTask(name, id){
+    const t = (board.tasks[name] || []).find(x => x.id === id);
+    if(!t) return;
+    t.done = !t.done;
+    renderAll();
+    await saveBoard();
+  }
+
+  async function deleteTask(name, id){
+    board.tasks[name] = (board.tasks[name] || []).filter(x => x.id !== id);
+    renderAll();
+    await saveBoard();
+  }
+
+  async function addTask(name, text){
+    if(!text.trim()) return;
+    if(!board.tasks[name]) board.tasks[name] = [];
+    board.tasks[name].push({ id: genId(), text: text.trim(), done:false });
+    renderAll();
+    await saveBoard();
+  }
+
+  // Écoute en direct : toute modification faite par l'un des deux
+  // (sur son propre appareil) est reçue quasi instantanément par l'autre.
+  function startLiveSync(){
+    stopLiveSync();
+    boardRef = db.ref('board');
+    boardRef.on('value', (snap) => {
+      if(snap.exists()){
+        board = snap.val();
+        renderAll();
+      }
+    }, (err) => {
+      console.error('Erreur de synchronisation Firebase', err);
+      showConnError();
+    });
+  }
+  function stopLiveSync(){
+    if(boardRef){ boardRef.off('value'); boardRef = null; }
+  }
+
+  // Setup form
+  $('setupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nameA = $('nameInputA').value.trim();
+    const nameB = $('nameInputB').value.trim();
+    if(!nameA || !nameB || nameA === nameB) return;
+    board = {
+      config: { nameA, nameB, weekLabel: mondayLabel() },
+      tasks: { [nameA]: [], [nameB]: [] }
+    };
+    await saveBoard();
+    $('weekLabel').textContent = board.config.weekLabel;
+    renderWhoChoices();
+    showScreen('whoScreen');
+  });
+
+  // Add-task forms
+  $('addFormA').addEventListener('submit', (e) => {
+    e.preventDefault();
+    addTask(board.config.nameA, $('inputA').value);
+    $('inputA').value = '';
+  });
+  $('addFormB').addEventListener('submit', (e) => {
+    e.preventDefault();
+    addTask(board.config.nameB, $('inputB').value);
+    $('inputB').value = '';
+  });
+
+  // Reset week
+  $('resetWeekBtn').addEventListener('click', async () => {
+    if(!confirm('Effacer toutes les tâches et démarrer une nouvelle semaine ?')) return;
+    const { nameA, nameB } = board.config;
+    board.tasks = { [nameA]: [], [nameB]: [] };
+    board.config.weekLabel = mondayLabel();
+    $('weekLabel').textContent = board.config.weekLabel;
+    celebrated = false;
+    renderAll();
+    await saveBoard();
+  });
+
+  init();
+</script>
+</body>
+</html>
