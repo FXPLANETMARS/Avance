@@ -62,7 +62,7 @@
   }
   .ghost-btn:hover{ border-color:var(--text); color:var(--text); }
 
-  /* Screens: setup + whoami */
+  /* Screens: auth + setup + whoami */
   .screen{
     max-width:480px; margin:3rem auto; background:var(--bg-panel);
     border:1px solid var(--border); border-radius:16px; padding:2rem;
@@ -154,6 +154,17 @@
   .task button.del:hover{ color:#ff8080; }
   .empty-note{ color:var(--muted); font-size:.85rem; padding:.4rem 0 .8rem; }
 
+  .copy-btn{ align-self:flex-start; margin-bottom:.9rem; font-size:.8rem; }
+  .copy-panel{
+    background:var(--track); border:1px solid var(--border); border-radius:10px;
+    padding:1rem; margin-bottom:1rem;
+  }
+  .copy-title{ margin:0 0 .6rem; font-size:.85rem; color:var(--muted); }
+  .copy-list{ list-style:none; margin:0 0 .9rem; padding:0; display:flex; flex-direction:column; gap:.5rem; max-height:220px; overflow-y:auto; }
+  .copy-list li{ display:flex; align-items:center; gap:.55rem; font-size:.9rem; }
+  .copy-list input[type="checkbox"]{ width:16px; height:16px; accent-color: var(--accent); }
+  .copy-actions{ display:flex; gap:.6rem; justify-content:flex-end; }
+
   .add-form{ display:flex; gap:.6rem; }
   .add-form input{
     flex:1; background:var(--track); border:1px solid var(--border); border-radius:10px;
@@ -206,7 +217,22 @@
     <span class="week-label" id="weekLabel"></span>
     <div class="whoami-line hidden" id="whoamiLine"></div>
     <button class="ghost-btn hidden" id="resetWeekBtn">Nouvelle semaine</button>
+    <button class="ghost-btn hidden" id="signOutBtn">Se déconnecter</button>
   </div>
+</div>
+
+<!-- Auth gate: only two allowed Google accounts get past this -->
+<div class="screen" id="authScreen">
+  <h2>Mot de passe requis</h2>
+  <p>Entrez le mot de passe que vous avez choisi ensemble. Une fois entré, ton navigateur s'en souviendra automatiquement.</p>
+  <form id="loginForm">
+    <div class="field">
+      <label for="passwordInput">Mot de passe</label>
+      <input type="password" id="passwordInput" required placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button type="submit" class="glow-btn">Entrer</button>
+  </form>
+  <p class="conn-note error hidden" id="authMsg" style="margin-top:1rem; text-align:left;"></p>
 </div>
 
 <!-- Setup screen: first time, create the pair -->
@@ -250,6 +276,15 @@
     <p class="progress-label" id="progressA"></p>
     <ul class="tasks" id="tasksA"></ul>
     <p class="empty-note hidden" id="emptyA"></p>
+    <button type="button" class="ghost-btn copy-btn hidden" id="copyBtnA"></button>
+    <div class="copy-panel hidden" id="copyPanelA">
+      <p class="copy-title">Choisis les tâches à copier :</p>
+      <ul class="copy-list" id="copyListA"></ul>
+      <div class="copy-actions">
+        <button type="button" class="ghost-btn" id="copyCancelA">Annuler</button>
+        <button type="button" class="glow-btn" id="copyConfirmA">Copier la sélection</button>
+      </div>
+    </div>
     <form class="add-form hidden" id="addFormA">
       <input type="text" id="inputA" maxlength="80" placeholder="Ajouter une tâche" />
       <button type="submit" class="glow-btn">Ajouter</button>
@@ -271,6 +306,15 @@
     <p class="progress-label" id="progressB"></p>
     <ul class="tasks" id="tasksB"></ul>
     <p class="empty-note hidden" id="emptyB"></p>
+    <button type="button" class="ghost-btn copy-btn hidden" id="copyBtnB"></button>
+    <div class="copy-panel hidden" id="copyPanelB">
+      <p class="copy-title">Choisis les tâches à copier :</p>
+      <ul class="copy-list" id="copyListB"></ul>
+      <div class="copy-actions">
+        <button type="button" class="ghost-btn" id="copyCancelB">Annuler</button>
+        <button type="button" class="glow-btn b" id="copyConfirmB">Copier la sélection</button>
+      </div>
+    </div>
     <form class="add-form hidden" id="addFormB">
       <input type="text" id="inputB" maxlength="80" placeholder="Ajouter une tâche" />
       <button type="submit" class="glow-btn b">Ajouter</button>
@@ -284,37 +328,41 @@
 </main>
 
 <!-- ==========================================================
-     Firebase (base de données partagée en temps réel)
+     Firebase (auth + base de données partagée en temps réel)
      ========================================================== -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
-  // 1. Remplace CES valeurs par celles de TON projet Firebase :
-  //    Console Firebase > icône d'engrenage > Paramètres du projet
-  //    > section "Vos applications" > config de l'app Web.
+  // Reprends TES valeurs déjà utilisées dans ton fichier actuel
+  // (Console Firebase > icône d'engrenage > Paramètres du projet).
   const firebaseConfig = {
-    apiKey: "AIzaSyDOTPq9itAd2jxgPbQ_3tG3goz_5MsafOk",
-    authDomain: "avance-c3073.firebaseapp.com",
-    databaseURL: "https://avance-c3073-default-rtdb.firebaseio.com",
-    projectId: "avance-c3073",
-    storageBucket: "avance-c3073.firebasestorage.app",
-    messagingSenderId: "14629038035",
-    appId: "1:14629038035:web:20b1ea2100a8704193f126"
+    apiKey: "REMPLACE_MOI",
+    authDomain: "REMPLACE_MOI.firebaseapp.com",
+    databaseURL: "https://REMPLACE_MOI-default-rtdb.firebaseio.com",
+    projectId: "REMPLACE_MOI",
+    storageBucket: "REMPLACE_MOI.appspot.com",
+    messagingSenderId: "REMPLACE_MOI",
+    appId: "REMPLACE_MOI"
   };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+
+  // Un seul compte partagé sert de "mot de passe" pour vous deux.
+  // Remplace par l'adresse EXACTE que tu as créée dans
+  // Firebase > Authentication > Users (l'adresse peut être inventée,
+  // elle n'a pas besoin d'exister vraiment).
+  const APP_EMAIL = "REMPLACE_MOI@avance.app";
 </script>
 
 <script>
-  let board = null;      // { config:{nameA,nameB,weekLabel}, tasks:{ [name]: [{id,text,done}] } }
+  let board = null;      // { config:{nameA,nameB,weekLabel}, tasks:{ personA:{id:{text,done}}, personB:{...} } }
   let whoami = null;
   let boardRef = null;
   let celebrated = false;
 
   const $ = (id) => document.getElementById(id);
-
-  function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
   function mondayLabel(){
     const d = new Date();
@@ -325,56 +373,130 @@
     return 'Semaine du ' + monday.toLocaleDateString('fr-FR', { day:'numeric', month:'long' });
   }
 
-  // ---- Persistence layer (Firebase Realtime Database) ----
-  async function loadBoard(){
+  function personKey(name){
+    return name === board.config.nameA ? 'personA' : 'personB';
+  }
+  function tasksArray(name){
+    const key = personKey(name);
+    const obj = (board.tasks && board.tasks[key]) || {};
+    return Object.keys(obj).map(id => ({ id, text: obj[id].text, done: !!obj[id].done }));
+  }
+
+  // ---- Lecture / écriture Firebase ----
+  function isPermissionError(e){
+    return !!(e && (e.code === 'PERMISSION_DENIED' || /permission_denied/i.test(e.message || '')));
+  }
+
+  async function loadBoardOnce(){
     try{
       const snap = await db.ref('board').once('value');
-      return snap.exists() ? snap.val() : null;
+      return { ok:true, data: snap.exists() ? snap.val() : null };
     }catch(e){
       console.error('Erreur de lecture Firebase', e);
-      showConnError();
-      return null;
+      return { ok:false, permissionDenied:isPermissionError(e) };
     }
   }
-  async function saveBoard(){
+
+  async function createBoard(nameA, nameB){
     try{
-      await db.ref('board').set(board);
-    }catch(e){
-      console.error('Erreur de sauvegarde Firebase', e);
-      showConnError();
-    }
+      await db.ref('board/config').set({ nameA, nameB, weekLabel: mondayLabel() });
+      await db.ref('board/tasks').set({ personA:{}, personB:{} });
+      return true;
+    }catch(e){ console.error(e); showConnError(); return false; }
   }
+
+  async function resetWeek(){
+    try{
+      await db.ref('board/config').set({ ...board.config, weekLabel: mondayLabel() });
+      await db.ref('board/tasks').set({ personA:{}, personB:{} });
+    }catch(e){ console.error(e); showConnError(); }
+  }
+
+  // Chaque opération ne touche QUE le chemin précis concerné :
+  // impossible qu'une suppression ou un ajout écrase les tâches de l'autre.
+  async function pushTask(name, text){
+    try{ await db.ref('board/tasks/' + personKey(name)).push({ text: text.trim(), done:false }); }
+    catch(e){ console.error(e); showConnError(); }
+  }
+  async function setTaskDone(name, id, done){
+    try{ await db.ref('board/tasks/' + personKey(name) + '/' + id + '/done').set(done); }
+    catch(e){ console.error(e); showConnError(); }
+  }
+  async function removeTaskRemote(name, id){
+    try{ await db.ref('board/tasks/' + personKey(name) + '/' + id).remove(); }
+    catch(e){ console.error(e); showConnError(); }
+  }
+
   function showConnError(){
     const el = $('connNote');
-    el.textContent = "Impossible de contacter la base de données. Vérifie ta config Firebase et les règles de sécurité.";
+    el.textContent = "Impossible de contacter la base de données. Vérifie ta connexion et réessaie.";
     el.classList.remove('hidden');
     el.classList.add('error');
   }
+  function hideConnError(){ $('connNote').classList.add('hidden'); }
 
-  // "Qui es-tu" reste sur CET appareil/navigateur (localStorage, pas Firebase)
-  function loadWhoami(){
-    try{ return localStorage.getItem('avance_whoami'); }
-    catch(e){ return null; }
-  }
-  function saveWhoami(name){
-    try{ localStorage.setItem('avance_whoami', name); }
-    catch(e){ /* stockage indisponible, on continue quand même */ }
-  }
+  // "Qui es-tu" reste sur CET appareil/navigateur (pas dans Firebase)
+  function loadWhoami(){ try{ return localStorage.getItem('avance_whoami'); }catch(e){ return null; } }
+  function saveWhoami(name){ try{ localStorage.setItem('avance_whoami', name); }catch(e){} }
 
   function showScreen(id){
-    ['setupScreen','whoScreen','board'].forEach(s => $(s).classList.toggle('hidden', s !== id));
+    ['authScreen','setupScreen','whoScreen','board'].forEach(s => $(s).classList.toggle('hidden', s !== id));
     $('resetWeekBtn').classList.toggle('hidden', id !== 'board');
     $('whoamiLine').classList.toggle('hidden', id !== 'board');
+    $('signOutBtn').classList.toggle('hidden', id === 'authScreen');
   }
 
-  async function init(){
-    board = await loadBoard();
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ---- Auth ----
+  $('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('authMsg').classList.add('hidden');
+    const pwd = $('passwordInput').value;
+    try{
+      await firebase.auth().signInWithEmailAndPassword(APP_EMAIL, pwd);
+      $('passwordInput').value = '';
+    }catch(err){
+      console.error(err);
+      $('authMsg').textContent = "Mot de passe incorrect. Réessaie.";
+      $('authMsg').classList.remove('hidden');
+    }
+  });
+  $('signOutBtn').addEventListener('click', () => firebase.auth().signOut());
+
+  firebase.auth().onAuthStateChanged(async (user) => {
+    if(!user){
+      stopLiveSync();
+      showScreen('authScreen');
+      return;
+    }
+    await bootApp();
+  });
+
+  async function bootApp(){
+    hideConnError();
+    const res = await loadBoardOnce();
+    if(!res.ok){
+      if(res.permissionDenied){
+        await firebase.auth().signOut();
+        showScreen('authScreen');
+        $('authMsg').textContent = "Accès refusé. Réessaie de te connecter.";
+        $('authMsg').classList.remove('hidden');
+      } else {
+        showConnError();
+      }
+      return;
+    }
+    board = res.data;
     if(!board || !board.config){
       showScreen('setupScreen');
       return;
     }
     $('weekLabel').textContent = board.config.weekLabel || mondayLabel();
-
     whoami = loadWhoami();
     const validWho = whoami === board.config.nameA || whoami === board.config.nameB;
     if(!validWho){
@@ -413,12 +535,6 @@
     startLiveSync();
   }
 
-  function escapeHtml(str){
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
-  }
-
   function renderAll(){
     const { nameA, nameB } = board.config;
     $('nameA').textContent = nameA;
@@ -428,13 +544,18 @@
     $('addFormA').classList.toggle('hidden', whoami !== nameA);
     $('addFormB').classList.toggle('hidden', whoami !== nameB);
 
+    $('copyBtnA').textContent = 'Copier les tâches de ' + nameB;
+    $('copyBtnB').textContent = 'Copier les tâches de ' + nameA;
+    $('copyBtnA').classList.toggle('hidden', whoami !== nameA);
+    $('copyBtnB').classList.toggle('hidden', whoami !== nameB);
+
     renderLane(nameA, 'A', whoami === nameA);
     renderLane(nameB, 'B', whoami === nameB);
     updateCelebration();
   }
 
   function renderLane(name, suffix, isOwner){
-    const tasks = (board.tasks[name] || []);
+    const tasks = tasksArray(name);
     const total = tasks.length;
     const done = tasks.filter(t => t.done).length;
     const pct = total ? Math.round((done / total) * 100) : 0;
@@ -464,7 +585,7 @@
       cb.checked = t.done;
       cb.disabled = !isOwner;
       cb.setAttribute('aria-label', 'Marquer "' + t.text + '" comme terminée');
-      cb.onchange = () => toggleTask(name, t.id);
+      cb.onchange = () => setTaskDone(name, t.id, cb.checked);
       const span = document.createElement('span');
       span.textContent = t.text;
       li.appendChild(cb);
@@ -475,7 +596,7 @@
         del.type = 'button';
         del.textContent = '×';
         del.setAttribute('aria-label', 'Supprimer "' + t.text + '"');
-        del.onclick = () => deleteTask(name, t.id);
+        del.onclick = () => removeTaskRemote(name, t.id);
         li.appendChild(del);
       }
       ul.appendChild(li);
@@ -495,7 +616,7 @@
   function updateCelebration(){
     const { nameA, nameB } = board.config;
     const isFull = (name) => {
-      const tasks = board.tasks[name] || [];
+      const tasks = tasksArray(name);
       return tasks.length > 0 && tasks.every(t => t.done);
     };
     const bothDone = isFull(nameA) && isFull(nameB);
@@ -513,30 +634,61 @@
     }
   }
 
-  async function toggleTask(name, id){
-    const t = (board.tasks[name] || []).find(x => x.id === id);
-    if(!t) return;
-    t.done = !t.done;
-    renderAll();
-    await saveBoard();
+  // ---- Copier les tâches de l'autre ----
+  function toggleCopyPanel(suffix){
+    const panel = $('copyPanel' + suffix);
+    const willShow = panel.classList.contains('hidden');
+    if(willShow) renderCopyList(suffix);
+    panel.classList.toggle('hidden');
   }
 
-  async function deleteTask(name, id){
-    board.tasks[name] = (board.tasks[name] || []).filter(x => x.id !== id);
-    renderAll();
-    await saveBoard();
+  function renderCopyList(suffix){
+    const other = suffix === 'A' ? board.config.nameB : board.config.nameA;
+    const list = $('copyList' + suffix);
+    list.innerHTML = '';
+    const otherTasks = tasksArray(other);
+    if(otherTasks.length === 0){
+      const li = document.createElement('li');
+      li.textContent = "Rien à copier pour l'instant.";
+      li.style.color = 'var(--muted)';
+      list.appendChild(li);
+      return;
+    }
+    otherTasks.forEach(t => {
+      const li = document.createElement('li');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = t.id;
+      const span = document.createElement('span');
+      span.textContent = t.text;
+      li.appendChild(cb);
+      li.appendChild(span);
+      list.appendChild(li);
+    });
   }
 
-  async function addTask(name, text){
-    if(!text.trim()) return;
-    if(!board.tasks[name]) board.tasks[name] = [];
-    board.tasks[name].push({ id: genId(), text: text.trim(), done:false });
-    renderAll();
-    await saveBoard();
+  async function confirmCopy(suffix){
+    const mine = suffix === 'A' ? board.config.nameA : board.config.nameB;
+    const other = suffix === 'A' ? board.config.nameB : board.config.nameA;
+    const panel = $('copyPanel' + suffix);
+    const checked = [...panel.querySelectorAll('input[type="checkbox"]:checked')];
+    const otherTasks = tasksArray(other);
+    for(const cb of checked){
+      const task = otherTasks.find(t => t.id === cb.value);
+      if(task) await pushTask(mine, task.text);
+    }
+    panel.classList.add('hidden');
   }
+
+  $('copyBtnA').addEventListener('click', () => toggleCopyPanel('A'));
+  $('copyBtnB').addEventListener('click', () => toggleCopyPanel('B'));
+  $('copyCancelA').addEventListener('click', () => $('copyPanelA').classList.add('hidden'));
+  $('copyCancelB').addEventListener('click', () => $('copyPanelB').classList.add('hidden'));
+  $('copyConfirmA').addEventListener('click', () => confirmCopy('A'));
+  $('copyConfirmB').addEventListener('click', () => confirmCopy('B'));
 
   // Écoute en direct : toute modification faite par l'un des deux
-  // (sur son propre appareil) est reçue quasi instantanément par l'autre.
+  // est reçue quasi instantanément par l'autre.
   function startLiveSync(){
     stopLiveSync();
     boardRef = db.ref('board');
@@ -544,15 +696,19 @@
       if(snap.exists()){
         board = snap.val();
         renderAll();
+        hideConnError();
       }
-    }, (err) => {
+    }, async (err) => {
       console.error('Erreur de synchronisation Firebase', err);
-      showConnError();
+      if(isPermissionError(err)){
+        stopLiveSync();
+        await firebase.auth().signOut();
+      } else {
+        showConnError();
+      }
     });
   }
-  function stopLiveSync(){
-    if(boardRef){ boardRef.off('value'); boardRef = null; }
-  }
+  function stopLiveSync(){ if(boardRef){ boardRef.off('value'); boardRef = null; } }
 
   // Setup form
   $('setupForm').addEventListener('submit', async (e) => {
@@ -560,11 +716,10 @@
     const nameA = $('nameInputA').value.trim();
     const nameB = $('nameInputB').value.trim();
     if(!nameA || !nameB || nameA === nameB) return;
-    board = {
-      config: { nameA, nameB, weekLabel: mondayLabel() },
-      tasks: { [nameA]: [], [nameB]: [] }
-    };
-    await saveBoard();
+    const ok = await createBoard(nameA, nameB);
+    if(!ok) return;
+    const res = await loadBoardOnce();
+    if(res.ok) board = res.data;
     $('weekLabel').textContent = board.config.weekLabel;
     renderWhoChoices();
     showScreen('whoScreen');
@@ -573,28 +728,23 @@
   // Add-task forms
   $('addFormA').addEventListener('submit', (e) => {
     e.preventDefault();
-    addTask(board.config.nameA, $('inputA').value);
+    const val = $('inputA').value;
+    if(val.trim()) pushTask(board.config.nameA, val);
     $('inputA').value = '';
   });
   $('addFormB').addEventListener('submit', (e) => {
     e.preventDefault();
-    addTask(board.config.nameB, $('inputB').value);
+    const val = $('inputB').value;
+    if(val.trim()) pushTask(board.config.nameB, val);
     $('inputB').value = '';
   });
 
   // Reset week
   $('resetWeekBtn').addEventListener('click', async () => {
     if(!confirm('Effacer toutes les tâches et démarrer une nouvelle semaine ?')) return;
-    const { nameA, nameB } = board.config;
-    board.tasks = { [nameA]: [], [nameB]: [] };
-    board.config.weekLabel = mondayLabel();
-    $('weekLabel').textContent = board.config.weekLabel;
     celebrated = false;
-    renderAll();
-    await saveBoard();
+    await resetWeek();
   });
-
-  init();
 </script>
 </body>
 </html>
